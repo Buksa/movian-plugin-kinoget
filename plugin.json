@@ -1,0 +1,15 @@
+{
+  "type": "ecmascript",
+  "apiversion": 2,
+  "id": "kinoget",
+  "file": "kinoget.js",
+  "showtimeVersion": "4.9.479",
+  "version": "0.0.1",
+  "author": "Buksa",
+  "title": "kinoget",
+  "icon": "logo.png",
+  "synopsis": "Kinoget.to - интернет-база с огромным выбором торрентов, для скачивания фильмов, мультфильмов и сериалов.",
+  "category": "video",
+  "description": "<p>This plugin is not affiliated with kinoget.to <p>For more information on kinoget.to, please visit <a href=\"http://www.kinoget.to\">http://www.kinoget.to</a>",
+  "homepage": "https://github.com/Buksa/movian-plugin-kinoget"
+}
