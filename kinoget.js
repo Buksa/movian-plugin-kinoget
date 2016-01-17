@@ -16,6 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+//ver 0.1.1
 var plugin = JSON.parse(Plugin.manifest);
 var PREFIX = plugin.id;
 var BASE_URL = "http://kinoget.to";
@@ -24,15 +25,70 @@ var settings = require("showtime/settings");
 var page = require("showtime/page");
 var http = require("showtime/http");
 var html = require("showtime/html");
+var io = require('native/io');
 service.create(plugin.title, PREFIX + ":start", "video", true, Plugin.path + "logo.png");
 settings.globalSettings(plugin.id, plugin.title, Plugin.path + "logo.png", plugin.synopsis);
 settings.createDivider("General");
 settings.createBool("debug", "Debug", false, function(v) {
   service.debug = v;
 });
+io.httpInspectorCreate("http.*\\.kinoget.to*", function(req) {
+  req.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36');
+  req.setHeader('Accept-Encoding', 'gzip, deflate');
+});
 new page.Route(PREFIX + ":start", start);
 new page.Route(PREFIX + ":index:([^:]+):(.*)", index);
 new page.Route(PREFIX + ":mediaInfo:(.*)", mediaInfo);
+page.Searcher(PREFIX + " - Videos", Plugin.path + "logo.png", searcher);
+
+function searcher(page, query) {
+  page.entries = 0;
+  page.type = "directory";
+  page.loading = true;
+  query = escape(query);
+  try {
+    console.log("Search kinoget for: " + query);
+    //curl "http://kinoget.to/search"
+    //-H "Pragma: no-cache"
+    //-H "Origin: http://kinoget.to"
+    //-H "Accept-Encoding: gzip, deflate"
+    //-H "Accept-Language: en-US,en;q=0.8,zh;q=0.6,zh-CN;q=0.4,zh-TW;q=0.2"
+    //-H "Upgrade-Insecure-Requests: 1"
+    //-H "User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36"
+    //-H "Content-Type: application/x-www-form-urlencoded"
+    //-H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+    //-H "Cache-Control: no-cache"
+    //-H "Referer: http://kinoget.to/"
+    //-H "Cookie: __cfduid=de9bcd6aed38c2ecb6246fe16065e14361452636293; ci_session=b96cee607116c07227fbaf46ae141176f5f1486c"
+    //-H "Connection: keep-alive" --data "search_text=lost" --compressed
+    var response = http.request("http://kinoget.to/search", {
+      debug: service.debug,
+      postdata: {
+        search_text: query
+      }
+    });
+    //returnValue=[]
+    var dom = html.parse(response.toString());
+    var elements = dom.root.getElementByClassName("filmInfo");
+    for (i = 0; i < elements.length; i++) {
+      element = elements[i];
+      year = null !== /\((\d{4})\)/.exec(element.getElementByClassName("origTitle")[0].textContent.trim()) ? /(\d{4})/.exec(element.getElementByClassName("origTitle")[0].textContent.trim())[0] : "";
+      href = element.getElementByTagName("a")[0].attributes.getNamedItem("href").value
+      icon = BASE_URL + element.getElementByTagName("img")[0].attributes.getNamedItem("src").value
+      title = element.getElementByClassName("filmblockTitle")[0].textContent.trim()
+      page.appendItem(PREFIX + ":mediaInfo:" + href, "video", {
+        title: title,
+        icon: icon,
+        year: +year
+      });
+      page.entries++;
+    }
+  } catch (err) {
+    console.log("kinoget - Ошибка поиска:  " + err);
+    e(err);
+  }
+  page.loading = false;
+}
 
 function start(page) {
   page.metadata.title = plugin.title;
@@ -57,13 +113,15 @@ function getTitles(response, callback) {
     var elements = dom.root.getElementByClassName("filmBlock");
     for (i = 0; i < elements.length; i++) {
       element = elements[i];
+      var year = null !== /\((\d{4})\)/.exec(element.getElementByClassName("origTitle")[0].textContent.trim()) ? /(\d{4})/.exec(element.getElementByClassName("origTitle")[0].textContent.trim())[0] :
+        "";
       returnValue.push({
         url: element.getElementByTagName("a")[0].attributes.getNamedItem("href").value,
         icon: BASE_URL + element.getElementByTagName("img")[0].attributes.getNamedItem("src").value,
         title: element.getElementByClassName("filmblockTitle")[0].textContent.trim(),
+        year: year,
         orig_title: element.getElementByClassName("origTitle")[0].textContent.trim(),
-        description: element.getElementByClassName("filmRightSide")[0].getElementByTagName("span")[3].textContent
-          .trim()
+        description: element.getElementByClassName("filmRightSide")[0].getElementByTagName("span")[3].textContent.trim()
       });
     }
   }
@@ -91,7 +149,7 @@ function start_block(page, href, title) {
     item = items[i];
     page.appendItem(PREFIX + ":mediaInfo:" + item.url, "video", {
       title: item.title,
-      year: parseInt(item.year, 10),
+      year: item.year ? parseInt(item.year, 10) : '',
       rating: parseInt(item.rating, 10),
       genre: item.genre,
       description: item.description ? item.description : item.title,
@@ -146,37 +204,6 @@ function index(page, path, title) {
   loader();
 }
 
-function show(page, href) {
-  page.metadata.title = plugin.title;
-  page.metadata.logo = Plugin.path + "logo.png";
-  page.loading = true;
-  try {
-    var resp = http.request("https://soap4.me" + href, {
-      method: "GET",
-      noFail: true,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0"
-      }
-    });
-    dom = html.parse(resp.toString());
-    dom.root.getElementById("soap").getElementByTagName("li").forEach(function(element, i) {
-      href = element.getElementByTagName("a")[0].attributes.getNamedItem("href").value;
-      icon = element.getElementByTagName("img")[0].attributes.getNamedItem("original-src").value;
-      title = element.getElementByClassName("season")[0].textContent;
-      page.appendItem(PREFIX + ":mediaInfo:" + href, "video", {
-        title: title,
-        icon: icon
-      });
-    });
-  } catch (err) {
-    p("xxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    p(e(err));
-    p("xxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-  }
-  page.type = "directory";
-  page.loading = false;
-}
-
 function mediaInfo(page, href) {
   page.metadata.title = plugin.title;
   page.metadata.logo = Plugin.path + "logo.png";
@@ -190,8 +217,7 @@ function mediaInfo(page, href) {
       }
     });
     dom = html.parse(resp.toString());
-    dom.root.getElementByClassName("filmVersions")[0].getElementByTagName("tbody")[0].children.forEach(function(
-      element, i) {
+    dom.root.getElementByClassName("filmVersions")[0].getElementByTagName("tbody")[0].children.forEach(function(element, i) {
       href = element.getElementByTagName("a")[0].attributes.getNamedItem("href").value;
       title = element.getElementByTagName("span")[0].textContent.trim();
       size = element.getElementByTagName("span")[1].textContent.trim();
