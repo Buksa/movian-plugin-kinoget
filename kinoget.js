@@ -32,7 +32,7 @@ settings.createDivider("General");
 settings.createBool("debug", "Debug", false, function(v) {
   service.debug = v;
 });
-io.httpInspectorCreate("http.*\\.kinoget.to*", function(req) {
+io.httpInspectorCreate("http.*kinoget\.to.*", function(req) {
   req.setHeader('User-Agent', 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36');
   req.setHeader('Accept-Encoding', 'gzip, deflate');
 });
@@ -48,19 +48,6 @@ function searcher(page, query) {
   query = escape(query);
   try {
     console.log("Search kinoget for: " + query);
-    //curl "http://kinoget.to/search"
-    //-H "Pragma: no-cache"
-    //-H "Origin: http://kinoget.to"
-    //-H "Accept-Encoding: gzip, deflate"
-    //-H "Accept-Language: en-US,en;q=0.8,zh;q=0.6,zh-CN;q=0.4,zh-TW;q=0.2"
-    //-H "Upgrade-Insecure-Requests: 1"
-    //-H "User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36"
-    //-H "Content-Type: application/x-www-form-urlencoded"
-    //-H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-    //-H "Cache-Control: no-cache"
-    //-H "Referer: http://kinoget.to/"
-    //-H "Cookie: __cfduid=de9bcd6aed38c2ecb6246fe16065e14361452636293; ci_session=b96cee607116c07227fbaf46ae141176f5f1486c"
-    //-H "Connection: keep-alive" --data "search_text=lost" --compressed
     var response = http.request("http://kinoget.to/search", {
       debug: service.debug,
       postdata: {
