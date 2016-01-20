@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//ver 0.1.1
+//ver 0.1.2
 var plugin = JSON.parse(Plugin.manifest);
 var PREFIX = plugin.id;
 var BASE_URL = "http://kinoget.to";
@@ -213,6 +213,11 @@ function mediaInfo(page, href) {
         title: title + ' | Сиды:' + seeds
       });
     });
+    ptitle = dom.root.getElementByTagName("h3")[0].textContent
+    page.appendItem("search:"+ptitle, "file", {
+        title: 'Search: '+ptitle + ' in others apps'
+    });
+    
   } catch (err) {
     p("xxxxxxxxxxxxxxxxxxxxxxxxxxxx");
     p(e(err));
