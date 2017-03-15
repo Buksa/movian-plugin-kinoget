@@ -1,7 +1,7 @@
 /*
  *  kinoget  - Movian Plugin
  *
- *  Copyright (C) 2016 Buksa
+ *  Copyright (C) 2016-2017 Buksa
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,10 +16,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-//ver 0.1.2
+//ver 0.1.3
 var plugin = JSON.parse(Plugin.manifest);
 var PREFIX = plugin.id;
-var BASE_URL = "http://kinoget.to";
+var BASE_URL = "https://kinoget.to";
 var service = require("showtime/service");
 var settings = require("showtime/settings");
 var page = require("showtime/page");
@@ -48,7 +48,7 @@ function searcher(page, query) {
   query = escape(query);
   try {
     console.log("Search kinoget for: " + query);
-    var response = http.request("http://kinoget.to/search", {
+    var response = http.request(BASE_URL+"/search", {
       debug: service.debug,
       postdata: {
         search_text: query
